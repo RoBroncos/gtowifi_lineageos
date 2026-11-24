@@ -1,0 +1,32 @@
+name: Validate custom device tree
+on:
+  push:
+    branches: [dev/lowram]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate custom scripts
+        run: |
+          bash -n tools/build-local.sh
+          bash -n tools/collect-lowram-baseline.sh
+          python3 -m py_compile tools/prepare-custom-manifests.py
+      - name: Exercise manifest preparation
+        run: |
+          dest="$(mktemp -d)"
+          python3 tools/prepare-custom-manifests.py local_manifests "$dest"
+          python3 - "$dest" <<'PY'
+          import pathlib, sys, xml.etree.ElementTree as ET
+          projects = [p for f in pathlib.Path(sys.argv[1]).glob("*.xml")
+                      for p in ET.parse(f).getroot().findall("project")]
+          matches = [p for p in projects if p.get("path") == "device/samsung/gtowifi_mainline"]
+          assert len(matches) == 1
+          assert matches[0].get("name") == "RoBroncos/gtowifi_lineageos"
+          assert matches[0].get("revision") == "refs/heads/dev/lowram"
+          PY
