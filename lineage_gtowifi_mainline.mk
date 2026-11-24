@@ -20,3 +20,10 @@ PRODUCT_DEVICE := gtowifi_mainline
 PRODUCT_BRAND := samsung
 PRODUCT_MANUFACTURER := samsung
 PRODUCT_MODEL := SM-T290
+
+# Experimental low-memory profile for the 2 GiB SM-T290.
+# Opt in at build time; baseline remains unchanged for A/B testing.
+ifeq ($(GTOWIFI_LOW_RAM),true)
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.config.low_ram=true
+endif
